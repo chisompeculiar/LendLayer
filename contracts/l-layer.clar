@@ -197,3 +197,20 @@
         current-epoch: (var-get current-epoch),
         interest-accumulated: (var-get interest-accumulated)
     }))
+
+(define-read-only (get-liquidation-risk (user principal))
+    (let (
+        (user-collateral (default-to u0 (map-get? collateral user)))
+        (borrow-info (unwrap-panic (get-user-borrow user)))
+        (total-owed (get total-owed borrow-info))
+        (current-ratio (if (is-eq total-owed u0)
+            u0
+            (/ (* user-collateral u10000) total-owed)))
+    )
+    (ok {
+        collateral-amount: user-collateral,
+        current-ratio: current-ratio,
+        liquidation-threshold: LIQUIDATION_THRESHOLD,
+        at-risk: (< current-ratio LIQUIDATION_THRESHOLD),
+        safety-buffer: (- current-ratio LIQUIDATION_THRESHOLD)
+    })))
