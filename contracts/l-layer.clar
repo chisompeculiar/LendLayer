@@ -22,7 +22,11 @@
 
 ;; Variables
 (define-data-var total-liquidity uint u0)
-(define-data-var interest-rate uint u500)
+(define-data-var total-borrowed uint u0)
+(define-data-var base-rate uint u500)
+(define-data-var slope1 uint u1000) ;; First slope for utilization
+(define-data-var slope2 uint u3000) ;; Second slope for high utilization
+(define-data-var optimal-utilization uint u8000) ;; 80% optimal utilization
 (define-data-var collateral-ratio uint u15000)
 (define-data-var admin principal tx-sender)
 (define-data-var current-epoch uint u0)
@@ -66,7 +70,9 @@
     (try! (as-contract (stx-transfer? amount (as-contract tx-sender) sender)))
     (map-set borrows sender (+ (default-to u0 (map-get? borrows sender)) amount))
     (map-set last-epoch sender (var-get current-epoch))
+    (var-set total-borrowed (+ (var-get total-borrowed) amount))
     (var-set total-liquidity (- (var-get total-liquidity) amount))
+    (try! (update-interest-rate))
     (ok amount)))
 
 (define-public (repay (amount uint))
@@ -134,7 +140,37 @@
     
     (ok true)))
 
-;; Read-Only Functions
+;; Interest Rate Functions
+(define-read-only (get-utilization-rate)
+    (let (
+        (liquidity (var-get total-liquidity))
+    )
+    (if (is-eq liquidity u0)
+        u0
+        (/ (* (var-get total-borrowed) u10000) liquidity))))
+
+(define-read-only (calculate-interest-rate)
+    (let (
+        (utilization (get-utilization-rate))
+        (optimal-util (var-get optimal-utilization))
+    )
+    (if (<= utilization optimal-util)
+        ;; Below optimal: base-rate + slope1 * utilization
+        (+ (var-get base-rate) 
+           (/ (* utilization (var-get slope1)) u10000))
+        ;; Above optimal: base-rate + slope1 * optimal + slope2 * (utilization - optimal)
+        (+ (+ (var-get base-rate)
+              (/ (* optimal-util (var-get slope1)) u10000))
+           (/ (* (- utilization optimal-util) (var-get slope2)) u10000)))))
+
+(define-public (update-interest-rate)
+    (let (
+        (sender tx-sender)
+        (new-rate (calculate-interest-rate))
+    )
+    (asserts! (is-eq sender (var-get admin)) ERR-NOT-AUTHORIZED)
+    (var-set interest-rate new-rate)
+    (ok new-rate)))
 (define-read-only (get-user-deposit (user principal))
     (ok (default-to u0 (map-get? deposits user))))
 
