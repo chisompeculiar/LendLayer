@@ -5,6 +5,13 @@
 (define-constant ERR-INSUFFICIENT-BALANCE (err u2))
 (define-constant ERR-INSUFFICIENT-COLLATERAL (err u3))
 (define-constant ERR-POOL-EMPTY (err u4))
+(define-constant ERR-INVALID-AMOUNT (err u5))
+(define-constant ERR-DEPOSIT-LIMIT (err u6))
+(define-constant ERR-POOL-LIMIT (err u7))
+
+;; Constants
+(define-constant MAX_DEPOSIT u1000000000000) ;; 1 million STX
+(define-constant MAX_POOL_SIZE u10000000000000) ;; 10 million STX
 
 ;; Data Variables
 (define-data-var total-liquidity uint u0)
@@ -21,10 +28,15 @@
     (let (
         (sender tx-sender)
         (current-deposit (default-to u0 (map-get? user-deposits sender)))
+        (current-liquidity (var-get total-liquidity))
     )
+    (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+    (asserts! (<= (+ current-deposit amount) MAX_DEPOSIT) ERR-DEPOSIT-LIMIT)
+    (asserts! (<= (+ current-liquidity amount) MAX_POOL_SIZE) ERR-POOL-LIMIT)
+    
     (try! (stx-transfer? amount sender (as-contract tx-sender)))
     (map-set user-deposits sender (+ current-deposit amount))
-    (var-set total-liquidity (+ (var-get total-liquidity) amount))
+    (var-set total-liquidity (+ current-liquidity amount))
     (ok amount)))
 
 (define-public (withdraw (amount uint))
