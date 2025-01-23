@@ -24,13 +24,14 @@
 (define-data-var total-liquidity uint u0)
 (define-data-var total-borrowed uint u0)
 (define-data-var base-rate uint u500)
-(define-data-var slope1 uint u1000) ;; First slope for utilization
-(define-data-var slope2 uint u3000) ;; Second slope for high utilization
-(define-data-var optimal-utilization uint u8000) ;; 80% optimal utilization
+(define-data-var slope1 uint u1000) 
+(define-data-var slope2 uint u3000) 
+(define-data-var optimal-utilization uint u8000)
 (define-data-var collateral-ratio uint u15000)
 (define-data-var admin principal tx-sender)
 (define-data-var current-epoch uint u0)
 (define-data-var interest-accumulated uint u0)
+(define-data-var interest-rate uint u500)
 
 ;; Maps
 (define-map deposits principal uint)
@@ -171,6 +172,7 @@
     (asserts! (is-eq sender (var-get admin)) ERR-NOT-AUTHORIZED)
     (var-set interest-rate new-rate)
     (ok new-rate)))
+
 (define-read-only (get-user-deposit (user principal))
     (ok (default-to u0 (map-get? deposits user))))
 
