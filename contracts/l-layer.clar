@@ -1,5 +1,4 @@
 ;; LendLayer - DeFi Lending Platform
-;; Version: 1.0.0
 
 ;; Constants & Errors
 (define-constant MAX_DEPOSIT u1000000000000)
@@ -38,6 +37,8 @@
 (define-map borrows principal uint)
 (define-map collateral principal uint)
 (define-map last-epoch principal uint)
+(define-map last-interest-claim principal uint)
+(define-map claimed-interest principal uint)
 
 ;; Admin Functions
 (define-public (update-interest)
@@ -57,6 +58,7 @@
     (asserts! (<= (+ current-deposit amount) MAX_DEPOSIT) ERR-DEPOSIT-LIMIT)
     (try! (stx-transfer? amount sender (as-contract tx-sender)))
     (map-set deposits sender (+ current-deposit amount))
+    (map-set last-interest-claim sender (var-get current-epoch))
     (var-set total-liquidity (+ (var-get total-liquidity) amount))
     (ok amount)))
 
@@ -188,6 +190,35 @@
         interest-owed: interest-amount,
         total-owed: (+ borrow-amount interest-amount)
     })))
+
+(define-read-only (get-claimable-interest (user principal))
+    (let (
+        (deposit-amount (default-to u0 (map-get? deposits user)))
+        (last-claim (default-to u0 (map-get? last-interest-claim user)))
+        (epochs-elapsed (- (var-get current-epoch) last-claim))
+        (utilization-rate (get-utilization-rate))
+        (interest-share (/ (* deposit-amount utilization-rate) u10000))
+        (total-interest (* interest-share epochs-elapsed))
+    )
+    (ok {
+        claimable-amount: total-interest,
+        last-claim-epoch: last-claim,
+        epochs-elapsed: epochs-elapsed
+    })))
+
+(define-public (claim-interest)
+    (let (
+        (sender tx-sender)
+        (claimable-info (unwrap-panic (get-claimable-interest sender)))
+        (claim-amount (get claimable-amount claimable-info))
+    )
+    (asserts! (> claim-amount u0) ERR-INVALID-AMOUNT)
+    (try! (as-contract (stx-transfer? claim-amount (as-contract tx-sender) sender)))
+    (map-set last-interest-claim sender (var-get current-epoch))
+    (map-set claimed-interest 
+        sender 
+        (+ (default-to u0 (map-get? claimed-interest sender)) claim-amount))
+    (ok claim-amount)))
 
 (define-read-only (get-pool-details)
     (ok {

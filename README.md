@@ -4,46 +4,58 @@ A decentralized lending platform built on the Stacks blockchain, enabling users 
 
 ## Features
 
-- Deposit STX tokens into lending pools
-- Borrow assets against collateral
-- Automated interest rate calculations
+- Deposit and borrow STX tokens
+- Automated interest rate adjustments
+- Real-time liquidation risk monitoring
+- Interest claiming for lenders
 - Collateral management system
-- Real-time pool statistics
+- Liquidation mechanism with bonus incentives
 
 ## Technical Stack
 
 - Blockchain: Stacks
-- Smart Contract Language: Clarity
+- Smart Contract: Clarity
 - Frontend: React.js
 - Testing: Clarinet
 
 ## Smart Contract Functions
 
-### User Operations
+### Lending Operations
+- `deposit`: Deposit STX into lending pool
+- `borrow`: Borrow STX against collateral
+- `repay`: Repay borrowed amount with interest
+- `claim-interest`: Claim earned interest from deposits
+- `get-claimable-interest`: View pending interest earnings
 
-- `deposit`: Deposit STX tokens into the lending pool
-- `withdraw`: Withdraw deposited tokens
-- `borrow`: Borrow tokens against collateral
-- `get-user-deposit`: View user's deposited amount
-- `get-user-borrow`: View user's borrowed amount
+### Collateral Management
+- `deposit-collateral`: Lock collateral
+- `withdraw-collateral`: Remove collateral
+- `get-liquidation-risk`: Check position's liquidation risk
+- `liquidate`: Liquidate undercollateralized positions
+
+### Pool Information
+- `get-user-deposit`: View deposit amount
+- `get-user-borrow`: View borrow details
 - `get-pool-details`: View pool statistics
+- `get-utilization-rate`: Check pool utilization
 
 ### Key Parameters
-
-- Interest Rate: 5% (500 basis points)
+- Base Interest Rate: 5% (500 basis points)
 - Collateral Ratio: 150% (15000 basis points)
-- All amounts in micro-STX (1 STX = 1,000,000 micro-STX)
+- Liquidation Threshold: 130% (13000 basis points)
+- Liquidation Bonus: 5% (500 basis points)
+- Amounts in micro-STX (1 STX = 1,000,000 micro-STX)
 
 ## Development Setup
 
-1. Install Stacks development tools:
+1. Install Stacks tools:
 ```bash
 npm install -g @stacks/cli
 ```
 
-2. Clone the repository:
+2. Clone repository:
 ```bash
-git clone https://github.com/yourusername/lendlayer
+git clone https://github.com/chisompeculiar/lendlayer
 cd lendlayer
 ```
 
@@ -52,17 +64,16 @@ cd lendlayer
 clarinet test
 ```
 
-## Security Considerations
+## Security Features
 
-- Smart contract has been designed with safety checks
-- Implements collateral validation
-- Includes balance verification
-- Uses error handling for failed transactions
-
+- Collateral validation
+- Liquidation risk monitoring
+- Interest rate stabilization
+- Balance verification
+- Error handling for failed transactions
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
-
+1. Fork repository
+2. Create feature branch
+3. Submit pull request
